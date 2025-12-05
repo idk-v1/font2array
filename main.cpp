@@ -35,8 +35,8 @@ int main()
 			}
 		}
 	}
-	maxW++;
-	maxH++;
+	//maxW++;
+	//maxH++;
 
 	sf::Text text;
 	text.setCharacterSize(fontSize);
@@ -46,24 +46,37 @@ int main()
 		str[i - ' '] = i;
 	text.setString(str);
 
+
 	sf::RenderTexture tex;
-	tex.create(maxW * (128 - ' '), maxH);
+	tex.create((maxW + 1) * (128 - ' '), maxH);
+
+	sf::RectangleShape line(sf::Vector2f(maxW, maxH));
+	for (int i = 0; i < 128 - ' '; i++)
+	{
+		//line.setFillColor(sf::Color::Red);
+		//line.setPosition((maxW + 1) * i - 1, 0);
+		//tex.draw(line);
+		//line.setFillColor(i % 2 ? sf::Color::Black : sf::Color::Blue);
+		//line.setPosition((maxW + 1) * i, 0);
+		//tex.draw(line);
+	}
+
 	tex.draw(text);
 	tex.display();
 	sf::Image img = tex.getTexture().copyToImage();
-	//img.saveToFile(name + ".png");
+	img.saveToFile(name + ".png");
 
 	std::cout << maxW << " " <<	maxH << "\n";
 
 	std::ofstream file(name + ".h");
 
-	int stride = (maxW * maxH + 31) / 32 * 32;
+	int stride = (maxW * maxH + 31) / 32;
 	file << "#pragma once\n" <<
 		"#include <stdint.h>\n" << 
 		"uint32_t font_w = " << maxW << ";\n"
 		"uint32_t font_h = " << maxH << ";\n"
 		"uint32_t stride = " << stride << ";\n"
-		"uint32_t font[] = {\n";
+		"const uint32_t font[] = {\n";
 	for (int i = 0; i < 128 - ' '; i++)
 	{
 		file << "    ";
@@ -72,11 +85,11 @@ int main()
 			{
 				if ((x + y * maxW) % 32 == 0)
 					file << "0b";
-				file << ((img.getPixel(i * maxW + x, y).a >= 192) ? '1' : '0');
+				file << ((img.getPixel(i * (maxW + 1) + (x), y).a >= 192) ? '1' : '0');
 				if ((x + y * maxW) % 32 == 31 && !(x == maxW - 1 && y == maxH - 1))
 					file << ",";
 			}
-		for (int ii = 0; ii < stride - (maxW * maxH); ii++)
+		for (int ii = 0; ii < stride * 32 - (maxW * maxH); ii++)
 		{
 			file << '0';
 		}
