@@ -5,7 +5,7 @@
 
 int main()
 {
-	int fontSize = 19;
+	int fontSize = 19; // magic number that looks good
 	std::string name = "bulletinV1_font";
 
 	int maxW = 0;
@@ -14,7 +14,7 @@ int main()
 	sf::Font font;
 	font.loadFromFile(name + ".ttf");
 	font.setSmooth(false);
-	for (int i = ' ' + 1; i < 128; i++)
+	for (int i = ' ' + 1; i < 127; i++)
 	{
 		if (isprint(i))
 		{
@@ -26,41 +26,25 @@ int main()
 			if (g.bounds.width > maxW)
 			{
 				maxW = g.bounds.width;
-				std::cout << "width  '" << char(i) << "' " << maxW << "\n";
 			}
 			if (g.bounds.height + fontSize + g.bounds.top > maxH)
 			{
 				maxH = g.bounds.height + fontSize + g.bounds.top;
-				std::cout << "height '" << char(i) << "' " << maxH << "\n";
 			}
 		}
 	}
-	//maxW++;
-	//maxH++;
 
 	sf::Text text;
 	text.setCharacterSize(fontSize);
 	text.setFont(font);
-	char str[128 - ' ' + 1] = { 0 };
-	for (int i = ' '; i < 128; i++)
+	char str[127 - ' ' + 1] = { 0 };
+	for (int i = ' '; i < 127; i++)
 		str[i - ' '] = i;
 	text.setString(str);
 
 
 	sf::RenderTexture tex;
-	tex.create((maxW + 1) * (128 - ' '), maxH);
-
-	sf::RectangleShape line(sf::Vector2f(maxW, maxH));
-	for (int i = 0; i < 128 - ' '; i++)
-	{
-		//line.setFillColor(sf::Color::Red);
-		//line.setPosition((maxW + 1) * i - 1, 0);
-		//tex.draw(line);
-		//line.setFillColor(i % 2 ? sf::Color::Black : sf::Color::Blue);
-		//line.setPosition((maxW + 1) * i, 0);
-		//tex.draw(line);
-	}
-
+	tex.create((maxW + 1) * (127 - ' '), maxH);
 	tex.draw(text);
 	tex.display();
 	sf::Image img = tex.getTexture().copyToImage();
@@ -76,26 +60,34 @@ int main()
 		"uint32_t font_w = " << maxW << ";\n"
 		"uint32_t font_h = " << maxH << ";\n"
 		"uint32_t stride = " << stride << ";\n"
-		"const uint32_t font[] = {\n";
-	for (int i = 0; i < 128 - ' '; i++)
+		"const uint32_t font[] = \n{\n";
+	for (int i = 0; i < 127 - ' '; i++)
 	{
+		for (int y = 0; y < maxH; y++)
+		{
+			file << "    // |";
+			for (int x = 0; x < maxW; x++)
+				file << ((img.getPixel(i * (maxW + 1) + x, y).a >= 192) ? '#' : ' ');
+			file << "|\n";
+		}
+
 		file << "    ";
 		for (int y = 0; y < maxH; y++)
 			for (int x = 0; x < maxW; x++)
 			{
 				if ((x + y * maxW) % 32 == 0)
 					file << "0b";
-				file << ((img.getPixel(i * (maxW + 1) + (x), y).a >= 192) ? '1' : '0');
+				file << ((img.getPixel(i * (maxW + 1) + x, y).a >= 192) ? '1' : '0');
 				if ((x + y * maxW) % 32 == 31 && !(x == maxW - 1 && y == maxH - 1))
-					file << ",";
+					file << ",\n    ";
 			}
 		for (int ii = 0; ii < stride * 32 - (maxW * maxH); ii++)
 		{
 			file << '0';
 		}
-		if (i != 128 - ' ' - 1)
-			file << ',';
-		file << '\n';
+		if (i != 127 - ' ' - 1)
+			file << ",\n    ";
+		file << "\n";
 	}
 	file << "};";
 	file.close();
